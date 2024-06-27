@@ -304,10 +304,14 @@ if __name__ == "__main__":
         mail_json = mail.get()
 
         # Send an HTTP POST request to /mail/send
-        response = sg.client.mail.send.post(request_body=mail_json)
-        if response.status_code >= 200 and response.status_code <= 300:
-            print("Send test email: Success!")
-        else:
-            print("Send test email: Failure ({response.status_code}, {response.text})")
+        print("Here")
+        try:
+            response = sg.client.mail.send.post(request_body=mail_json)
+            if response.status_code >= 200 and response.status_code < 300:
+                print("Send test email: Success!")
+            else:
+                print(f"Send test email: Failure ({response.status_code}, {response.text})")
+        except Exception as e:
+            print(f"An error occurred while sending email: {str(e)}")
     else:
         print("No sendgrid api key found. Skipping email")
