@@ -294,6 +294,7 @@ if __name__ == "__main__":
     body = generate_body(topic, categories, interest, threshold)
     with open("digest.html", "w") as f:
         f.write(body)
+        print(body)
     if os.environ.get("SENDGRID_API_KEY", None):
         sg = SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
         from_email = Email(from_email)  # Change to your verified sender
