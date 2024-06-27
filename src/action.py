@@ -292,6 +292,7 @@ if __name__ == "__main__":
     threshold = config["threshold"]
     interest = config["interest"]
     body = generate_body(topic, categories, interest, threshold)
+    print(body)
     with open("digest.html", "w") as f:
         f.write(body)
         print(body)
@@ -305,7 +306,7 @@ if __name__ == "__main__":
         mail_json = mail.get()
 
         # Send an HTTP POST request to /mail/send
-        print("Here")
+        print("Here", mail_json)
         try:
             response = sg.client.mail.send.post(request_body=mail_json)
             if response.status_code >= 200 and response.status_code < 300:
