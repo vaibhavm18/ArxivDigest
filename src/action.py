@@ -1,6 +1,8 @@
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 
+from flask import Flask, request, jsonify
+
 from datetime import date
 
 import argparse
@@ -220,6 +222,18 @@ category_map = {
     "Economics": ["Econometrics", "General Economics", "Theoretical Economics"],
 }
 
+def normalize_subjects(subjects):
+    normalized_subjects = []
+    for subject in subjects:
+        main_subject = subject.split('\n')[-1].strip()
+        main_subject = main_subject.split('(')[0].strip()
+        normalized_subjects.append(main_subject.lower())
+    return normalized_subjects
+
+def compare_subjects(subjects_list, target_list):
+    normalized_subjects = normalize_subjects(subjects_list)
+    normalized_targets = [target.lower() for target in target_list]
+    return any(target in subject for target in normalized_targets for subject in normalized_subjects)
 
 def generate_body(topic, categories, interest, threshold):
     if topic == "Physics":
@@ -235,11 +249,13 @@ def generate_body(topic, categories, interest, threshold):
             if category not in category_map[topic]:
                 raise RuntimeError(f"{category} is not a category of {topic}")
         papers = get_papers(abbr)
-        papers = [
-            t
-            for t in papers
-            if bool(set(process_subject_fields(t["subjects"])) & set(categories))
-        ]
+        filterPaper = []
+        for paper in papers:
+            res = process_subject_fields(paper["subjects"])
+            is_exist = compare_subjects(res, categories)
+            if is_exist:
+                filterPaper.append(paper)
+        papers = filterPaper
     else:
         papers = get_papers(abbr)
     if interest:
@@ -269,6 +285,34 @@ def generate_body(topic, categories, interest, threshold):
         )
     return body
 
+server = Flask(__name__)
+
+@server.route('/papers', methods=['POST'])
+def papers():
+    try:
+        data = request.get_json()
+
+        # Extracting data with default values
+        topic = data.get('topic')
+        categories = data.get('categories')
+        interest = data.get('interest')
+        threshold = data.get('threshold')
+
+        # Ensure the required fields are present
+        if not topic or not categories or not interest or threshold is None:
+            raise ValueError("Missing required fields")
+
+        # Ensure categories is a list
+        if not isinstance(categories, list):
+            raise ValueError("Categories should be a list")
+
+        response = generate_body(topic,categories,interest,threshold)
+        return jsonify({"message": response}), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 if __name__ == "__main__":
     # Load the .env file.
@@ -291,29 +335,7 @@ if __name__ == "__main__":
     to_email = os.environ.get("TO_EMAIL")
     threshold = config["threshold"]
     interest = config["interest"]
-    body = generate_body(topic, categories, interest, threshold)
-    print(body)
-    with open("digest.html", "w") as f:
-        f.write(body)
-        print(body)
-    if os.environ.get("SENDGRID_API_KEY", None):
-        sg = SendGridAPIClient(api_key=os.environ.get("SENDGRID_API_KEY"))
-        from_email = Email(from_email)  # Change to your verified sender
-        to_email = To(to_email)
-        subject = date.today().strftime("Personalized arXiv Digest, %d %b %Y")
-        content = Content("text/html", body)
-        mail = Mail(from_email, to_email, subject, content)
-        mail_json = mail.get()
-
-        # Send an HTTP POST request to /mail/send
-        print("Here", mail_json)
-        try:
-            response = sg.client.mail.send.post(request_body=mail_json)
-            if response.status_code >= 200 and response.status_code < 300:
-                print("Send test email: Success!")
-            else:
-                print(f"Send test email: Failure ({response.status_code}, {response.text})")
-        except Exception as e:
-            print(f"An error occurred while sending email: {str(e)}")
-    else:
-        print("No sendgrid api key found. Skipping email")
+    # body = generate_body(topic, categories, interest, threshold)
+    # with open("digest.html", "w") as f:
+        # f.write(body)
+    server.run(debug=True)
