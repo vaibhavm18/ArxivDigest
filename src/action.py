@@ -313,7 +313,9 @@ def papers():
             raise ValueError("Categories should be a list")
 
         response = generate_body(topic,categories,interest,threshold)
-        return jsonify({"message": response}), 200
+        res = f"{response}"
+        print("res ---", res)
+        return jsonify({"message": res}), 200
 
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
@@ -344,4 +346,4 @@ if __name__ == "__main__":
     # body = generate_body(topic, categories, interest, threshold)
     # with open("digest.html", "w") as f:
         # f.write(body)
-    server.run(debug=True,host='127.0.0.0', port=port)
+    server.run(debug=True, host='127.0.0.0', port=port)
