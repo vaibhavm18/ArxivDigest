@@ -2,6 +2,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 from datetime import date
 
@@ -286,6 +287,8 @@ def generate_body(topic, categories, interest, threshold):
     return body
 
 server = Flask(__name__)
+CORS(server, origins='*') 
+
 
 @server.route("/")
 def hello():
