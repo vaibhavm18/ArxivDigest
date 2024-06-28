@@ -287,6 +287,9 @@ def generate_body(topic, categories, interest, threshold):
 
 server = Flask(__name__)
 
+@server.route("/")
+def hello():
+    return jsonify({"message": "Success"}), 200
 @server.route('/papers', methods=['POST'])
 def papers():
     try:
@@ -328,7 +331,7 @@ if __name__ == "__main__":
     if "OPENAI_API_KEY" not in os.environ:
         raise RuntimeError("No openai api key found")
     openai.api_key = os.environ.get("OPENAI_API_KEY")
-
+    port = os.environ.get("PORT")
     topic = config["topic"]
     categories = config["categories"]
     from_email = os.environ.get("FROM_EMAIL")
@@ -338,4 +341,4 @@ if __name__ == "__main__":
     # body = generate_body(topic, categories, interest, threshold)
     # with open("digest.html", "w") as f:
         # f.write(body)
-    server.run(debug=True)
+    server.run(debug=True, port=port)
