@@ -344,4 +344,4 @@ if __name__ == "__main__":
     # body = generate_body(topic, categories, interest, threshold)
     # with open("digest.html", "w") as f:
         # f.write(body)
-    server.run(debug=True, port=port)
+    server.run(debug=True,host='127.0.0.0', port=port)
